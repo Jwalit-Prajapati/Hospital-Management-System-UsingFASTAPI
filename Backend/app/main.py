@@ -1,0 +1,102 @@
+from fastapi import FastAPI, Depends, HTTPException, status
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
+from sqlalchemy.orm import Session
+import uvicorn
+from app.api.routes import patient_router, doctor_router, appointment_router, auth_router
+from app.core.config import settings
+from app.db.session import get_db, engine
+from app.db import models
+from app.api.deps import get_current_user
+from sqlalchemy import text
+
+models.Base.metadata.create_all(bind=engine)
+
+app = FastAPI(
+    title=settings.PROJECT_NAME,
+    description="API for managing patients, doctors, and appointments.",
+    version="1.0.0",
+    openapi_url="/openapi.json",
+    docs_url="/docs",
+    redoc_url="/redoc",
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.BACKEND_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
+
+app.include_router(
+    patient_router,
+    prefix="/api/v1/patients",
+    tags=["Patients"],
+    dependencies=[Depends(get_current_user)],
+)
+
+app.include_router(
+    doctor_router,
+    prefix="/api/v1/doctors",
+    tags=["Doctors"],
+    dependencies=[Depends(get_current_user)],
+)
+
+app.include_router(
+    appointment_router,
+    prefix="/api/v1/appointments",
+    tags=["Appointments"],
+    dependencies=[Depends(get_current_user)]
+)
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+
+    openapi_schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        description=app.description,
+        routes=app.routes,
+    )
+
+    openapi_schema["components"] = {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "Enter JWT token with 'Bearer ' prefix"
+            }
+        }
+    }
+
+    for path, path_item in openapi_schema["paths"].items():
+        if path == "/api/v1/auth/login" or path == "/api/v1/auth/register":
+            continue
+
+        for method in path_item.values():
+            method.setdefault("security", [{"bearerAuth": []}])
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schem
+
+app.openapi = custom_openapi
+
+@app.get("/", tags=["Root"])
+async def root():
+    return {"message": "Welcome to the Healthcare Appointment System API /docs for docs"}
+
+@app.get("/health", tags=["Health"])
+async def health_check(db: Session = Depends(get_db)):
+    try:
+        db.execute(text("SELECT 1"))
+        return {"status": "healthy", "database": "connected"}
+    except Exception as e:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Service unhealthy: {str(e)}"
+        )
