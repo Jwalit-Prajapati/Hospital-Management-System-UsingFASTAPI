@@ -7,6 +7,7 @@ from app.api.routes import patient_router, doctor_router, appointment_router, au
 from app.core.config import settings
 from app.db.session import get_db, engine
 from app.db import models
+from app.core.cache import CacheMiddleware
 from app.api.deps import get_current_user
 from sqlalchemy import text
 
@@ -28,6 +29,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.add_middleware(CacheMiddleware)
 
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 

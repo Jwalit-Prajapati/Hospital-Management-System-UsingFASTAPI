@@ -28,4 +28,6 @@ class Settings(BaseSettings):
 
     BACKEND_CORS_ORIGINS: List[str] = ["http://localhost:3000", "http://localhost:8000","http://localhost:5173"]
 
+    REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+
 settings = Settings()
