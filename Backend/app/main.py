@@ -8,6 +8,7 @@ from app.core.config import settings
 from app.db.session import get_db, engine
 from app.db import models
 from app.core.cache import CacheMiddleware
+from app.core.rate_limiter import RateLimiter
 from app.api.deps import get_current_user
 from sqlalchemy import text
 
@@ -31,6 +32,8 @@ app.add_middleware(
 )
 
 app.add_middleware(CacheMiddleware)
+
+app.add_middleware(RateLimiter)
 
 app.include_router(auth_router, prefix="/api/v1/auth", tags=["Authentication"])
 
