@@ -60,4 +60,4 @@ class Availability(AvailabilityInDBBase):
     pass
 
 class DoctorWithAvailability(Doctor):
-    availability: list[Availability] = []
+    availabilities: list[Availability] = []

@@ -66,7 +66,7 @@ class Doctor(Base):
 
     #Relationships
     appointments = relationship("Appointment", back_populates="doctor")
-    availabilites = relationship("Availability", back_populates="doctor")
+    availabilities = relationship("Availability", back_populates="doctor")
 
 class Availability(Base):
     __tablename__ = "availabilities"
@@ -79,7 +79,7 @@ class Availability(Base):
     is_available = Column(Boolean, default=True)
 
     #Relationships
-    doctor = relationship("Doctor", back_populates="availabilites")
+    doctor = relationship("Doctor", back_populates="availabilities")
 
 class Appointment(Base):
     __tablename__ = "appointments"

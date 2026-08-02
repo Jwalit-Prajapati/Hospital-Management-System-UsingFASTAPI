@@ -40,16 +40,16 @@ def get_current_active_user(current_user=Depends(get_current_user)):
     return current_user
 
 def get_current_admin(current_user=Depends(get_current_user)):
-    if current_user.role != UserRole.admin:
+    if current_user.role != UserRole.ADMIN:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     return current_user
 
 def get_current_doctor(current_user=Depends(get_current_user)):
-    if current_user.role != UserRole.doctor:
+    if current_user.role != UserRole.DOCTOR:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     return current_user
 
 def get_current_staff(current_user=Depends(get_current_user)):
-    if current_user.role not in [UserRole.admin, UserRole.doctor, UserRole.staff]:
+    if current_user.role not in [UserRole.ADMIN, UserRole.DOCTOR, UserRole.STAFF]:
         raise HTTPException(status_code=403, detail="Not enough permissions")
     return current_user

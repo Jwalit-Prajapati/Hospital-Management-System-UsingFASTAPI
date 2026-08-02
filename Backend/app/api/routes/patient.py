@@ -24,24 +24,29 @@ def read_patients(
 @router.post("/", response_model=Patient, status_code=status.HTTP_201_CREATED)
 def create_patient(
     *, db: Session = Depends(get_db),
-    patient_in = PatientCreate,
+    patient_in: PatientCreate,
 ) -> Any:
-    exitsting_patient = patient.get_by_email(db, email = patient_in.email)
-    if exitsting_patient:
+    existing_patient = patient.get_by_email(db, email = patient_in.email)
+    if existing_patient:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The patient with this email already exists in the system.",
         )
 
     try:
-        patient_obi = patient.create(db, obj_in=patient_in)
+        patient_obj = patient.create(db, obj_in=patient_in)
     except IntegrityError:
         db.rollback()
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Error creating patient.",
         )
-    return patient_obi
+    return patient_obj
+
+@router.get("/search",response_model = List[Patient], status_code=status.HTTP_200_OK)
+def search_patients( * , db: Session = Depends(get_db), query: str) -> Any:
+    patients = patient.search(db, query=query)
+    return patients
 
 @router.get("/{id}",response_model=Patient, status_code=status.HTTP_200_OK)
 def read_patient(
@@ -98,8 +103,3 @@ def delete_patient(*, db : Session = Depends(get_db), id : int) -> None:
             detail="Patient not found.",
         )
     patient.remove(db, id=id)
-
-@router.get("/search",response_model = List[Patient], status_code=status.HTTP_200_OK)
-def search_patients( * , db: Session = Depends(get_db), query: str) -> Any:
-    patients = patient.search(db, query=query)
-    return patients

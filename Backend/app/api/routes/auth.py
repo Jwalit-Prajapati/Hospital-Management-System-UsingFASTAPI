@@ -46,7 +46,7 @@ def login_for_access_token( logidata: LoginRequest, db: Session = Depends(get_db
 
     return {
         "access_token": create_access_token(
-            user_obj.id, expires_delta=access_token_expires
+            user_obj.id, role=user_obj.role, expires_delta=access_token_expires
         ),
         "token_type": "bearer",
     }

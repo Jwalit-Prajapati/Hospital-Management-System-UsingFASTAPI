@@ -4,11 +4,11 @@ from datetime import datetime
 from enum import Enum
 
 class AppointmentStatus(str, Enum):
-    SCHEDULED = "scheduled"
-    CONFIRMED = "confirmed"
-    CANCELLED = "cancelled"
-    COMPLETED = "completed"
-    NO_SHOW = "no_show"
+    SCHEDULED = "Scheduled"
+    CONFIRMED = "Confirmed"
+    CANCELLED = "Cancelled"
+    COMPLETED = "Completed"
+    NO_SHOW = "No Show"
 
 # Shared properties for Appointment model
 class AppointmentBase(BaseModel):
@@ -45,4 +45,4 @@ class AppointmentInDB(AppointmentInDBBase):
 class AppointmentDetail(AppointmentInDBBase):
     patient_name: str
     doctor_name: str
-    docker_specialization: str
+    doctor_specialization: str

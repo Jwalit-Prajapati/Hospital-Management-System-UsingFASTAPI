@@ -16,10 +16,10 @@ class CRUDAppointment(CRUDBase[Appointment, AppointmentCreate, AppointmentUpdate
         query = db.query(Appointment).filter(Appointment.patient_id == patient_id)
 
         if start_date:
-            query = query.filter(Appointment.appointment_date >= start_date)
+            query = query.filter(Appointment.start_time >= start_date)
 
         if end_date:
-            query = query.filter(Appointment.appointment_date <= end_date)
+            query = query.filter(Appointment.start_time <= end_date)
 
         return query.offset(skip).limit(limit).all()
 
@@ -32,10 +32,10 @@ class CRUDAppointment(CRUDBase[Appointment, AppointmentCreate, AppointmentUpdate
         query = db.query(Appointment).filter(Appointment.doctor_id == doctor_id)
 
         if start_date:
-            query = query.filter(Appointment.appointment_date >= start_date)
+            query = query.filter(Appointment.start_time >= start_date)
 
         if end_date:
-            query = query.filter(Appointment.appointment_date <= end_date)
+            query = query.filter(Appointment.start_time <= end_date)
 
         return query.offset(skip).limit(limit).all()
 
@@ -87,9 +87,9 @@ class CRUDAppointment(CRUDBase[Appointment, AppointmentCreate, AppointmentUpdate
         )
 
         if start_date:
-            query = query.filter(Appointment.appointment_date >= start_date)
+            query = query.filter(Appointment.start_time >= start_date)
         if end_date:
-            query = query.filter(Appointment.appointment_date <= end_date)
+            query = query.filter(Appointment.start_time <= end_date)
 
         results = query.offset(skip).limit(limit).all()
 

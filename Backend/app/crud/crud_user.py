@@ -15,7 +15,8 @@ class CRUDUser(CRUDBase[User, UserCreate, UserUpdate]):
         return db.query(User).filter(User.username == username).first()
 
     def create(self, db: Session, *, obj_in: UserCreate) -> User:
-        db_obj = User(**obj_in.model_dump(), hashed_password=get_password_hash(obj_in.password))
+
+        db_obj = User(**obj_in.model_dump(exclude={"password"}, mode='json'), hashed_password=get_password_hash(obj_in.password))
         db.add(db_obj)
         db.commit()
         db.refresh(db_obj)

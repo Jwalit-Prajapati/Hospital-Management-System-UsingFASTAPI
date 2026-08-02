@@ -1,5 +1,6 @@
-from typing import Optional, Dict, Any, Union
+from typing import Optional, Dict, Any, List, Union
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from app.db.models import Patient
 from app.schemas.patient import PatientCreate, PatientUpdate
 from app.crud.crud_base import CRUDBase
@@ -8,6 +9,16 @@ class CRUDPatient(CRUDBase[Patient, PatientCreate, PatientUpdate]):
 
     def get_by_email(self, db: Session, *, email: str) -> Optional[Patient]:
         return db.query(Patient).filter(Patient.email == email).first()
+
+    def search(self, db: Session, *, query: str) -> List[Patient]:
+        pattern = f"%{query}%"
+        return db.query(Patient).filter(
+            or_(
+                Patient.first_name.ilike(pattern),
+                Patient.last_name.ilike(pattern),
+                Patient.email.ilike(pattern),
+            )
+        ).all()
 
     def create(self, db: Session,*, obj_in: PatientCreate) -> Patient:
         db_obj = Patient(**obj_in.model_dump())

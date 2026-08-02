@@ -32,13 +32,13 @@ def read_appointments(
     
     if current_user.role == UserRole.PATIENT:
         appointments = appointment.get_by_patient(
-            db, id = current_user.id,
+            db, patient_id = current_user.id,
             start_date=start_date, end_date=end_date,
             skip=skip, limit=limit
         )
     elif current_user.role == UserRole.DOCTOR:
         appointments = appointment.get_by_doctor(
-            db, id = current_user.id,
+            db, doctor_id = current_user.id,
             start_date=start_date, end_date=end_date,
             skip=skip, limit=limit
         )
@@ -56,7 +56,7 @@ def create_appointment(
     *, db: Session = Depends(get_db),
     appointment_in: AppointmentCreate,
 ) -> Any:
-    is_doctor_available = doctor.is_available(
+    is_doctor_available = doctor.check_availability(
         db, doctor_id=appointment_in.doctor_id,
         start_time=appointment_in.start_time,
         end_time=appointment_in.end_time
@@ -191,7 +191,7 @@ def delete_appointment(*, db : Session = Depends(get_db),id: int) -> None:
 @router.put("/{id}/status", response_model=Appointment, status_code=status.HTTP_200_OK)
 def update_appointment_status(
     *, db: Session = Depends(get_db),
-    id = int, status: AppointmentStatus
+    id: int, status_in: AppointmentStatus
 ) -> Any:
     appointment_obj = appointment.get(db, id = id)
 
@@ -202,7 +202,7 @@ def update_appointment_status(
         )
 
     try:
-        appointment_obj = appointment.update_status(db, id=id, status=status)
+        appointment_obj = appointment.update_status(db, id=id, status=status_in)
     except IntegrityError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

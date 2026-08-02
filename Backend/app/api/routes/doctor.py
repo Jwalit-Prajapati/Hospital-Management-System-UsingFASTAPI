@@ -43,7 +43,7 @@ def create_doctor(
 
 @router.get("/{id}", response_model=Doctor, status_code=status.HTTP_200_OK)
 def read_doctor(*, db: Session = Depends(get_db), id: int) -> Any:
-    doctor_obj = doctor.get_with_availability(db, id=id)
+    doctor_obj = doctor.get_with_availability(db, doctor_id=id)
     if not doctor_obj:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -113,7 +113,7 @@ def add_doctor_availability(
             detail="Doctor not found.",
         )
     try:
-        doctor_obj = doctor.add_availability(db, id = id, availability_in=availability_in)
+        doctor_obj = doctor.add_availability(db, doctor_id = id, availability_in=availability_in)
     except IntegrityError:
         db.rollback()
         raise HTTPException(

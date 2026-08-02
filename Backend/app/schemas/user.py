@@ -4,10 +4,10 @@ from datetime import datetime
 from enum import Enum
 
 class UserRole(str, Enum):
-    ADMIN = "admin"
-    DOCTOR = "doctor"
-    PATIENT = "patient"
-    STAFF = "staff"
+    ADMIN = "Admin"
+    DOCTOR = "Doctor"
+    PATIENT = "Patient"
+    STAFF = "Staff"
 
 #Shared properties for User model
 class UserBase(BaseModel):
@@ -19,14 +19,14 @@ class UserBase(BaseModel):
 # Properties for User model when creating a new user
 class UserCreate(UserBase):
     password: str
-    reference_id: Optional[str] = None  # Optional reference ID for doctors and patients
+    reference_id: Optional[int] = None  # Optional reference ID for doctors and patients
 
 # Properties for User model when updating an existing user
 class UserUpdate(BaseModel):
     email: Optional[EmailStr] = None
     is_active: Optional[bool] = None
     role: Optional[UserRole] = None
-    reference_id: Optional[str] = None
+    reference_id: Optional[int] = None
 
 # Properties for User model when reading user data from the database    
 class UserInDBBase(UserBase):
@@ -51,4 +51,4 @@ class Token(BaseModel):
 
 class TokenPayload(BaseModel):
     sub: Optional[str] = None
-    role: Optional[int] = None
+    role: Optional[str] = None

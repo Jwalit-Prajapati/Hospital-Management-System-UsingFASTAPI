@@ -88,7 +88,7 @@ def custom_openapi():
             method.setdefault("security", [{"bearerAuth": []}])
 
     app.openapi_schema = openapi_schema
-    return app.openapi_schem
+    return app.openapi_schema
 
 app.openapi = custom_openapi
 
