@@ -9,6 +9,8 @@ from app.crud.crud_doctor import doctor
 from app.schemas.appointment import AppointmentCreate, AppointmentUpdate, AppointmentStatus, Appointment, AppointmentDetail
 from app.schemas.user import User, UserRole
 from app.db.session import get_db
+from app.db.models import Patient, Doctor
+from app.core.email import send_appointment_email, send_cancellation_email, send_appointment_reschedule_email
 
 router = APIRouter()
 
@@ -55,6 +57,7 @@ def read_appointments(
 def create_appointment(
     *, db: Session = Depends(get_db),
     appointment_in: AppointmentCreate,
+    background_tasks: BackgroundTasks,
 ) -> Any:
     is_doctor_available = doctor.check_availability(
         db, doctor_id=appointment_in.doctor_id,
@@ -81,6 +84,21 @@ def create_appointment(
         )
 
     appointment_obj = appointment.create(db, obj_in=appointment_in)
+
+    # Send email notification to patient and doctor
+    patient_obj = db.query(Patient).filter(Patient.id == appointment_in.patient_id).first()
+    doctor_obj = db.query(Doctor).filter(Doctor.id == appointment_in.doctor_id).first()
+
+    if patient_obj and doctor_obj:
+        background_tasks.add_task(
+            send_appointment_email,
+            email_to=patient_obj.email,
+            patient_name=f"{patient_obj.first_name} {patient_obj.last_name}",
+            doctor_name=f"{doctor_obj.first_name} {doctor_obj.last_name}",
+            appointment_date=appointment_in.start_time.date(),
+            start_time=appointment_in.start_time.time(),
+            end_time=appointment_in.end_time.time(),
+        )
 
     return appointment_obj
 
@@ -116,7 +134,8 @@ def read_appointment(
 def update_appointment(
     *, db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
-    id: int, appointment_in: AppointmentUpdate
+    id: int, appointment_in: AppointmentUpdate,
+    background_tasks: BackgroundTasks,
 ) -> Any:
     appointment_obj = appointment.get(db, id=id)
 
@@ -159,6 +178,9 @@ def update_appointment(
             )
 
     try:
+        old_start_time = appointment_obj.start_time
+        old_end_time = appointment_obj.end_time
+
         appointment_obj = appointment.update(db, db_obj=appointment_obj, obj_in=appointment_in)
     except IntegrityError:
         raise HTTPException(
@@ -166,10 +188,29 @@ def update_appointment(
             detail="Failed to update appointment due to integrity constraints."
         )
 
+    # Send email notification to patient and doctor if the appointment time has changed
+    if appointment_in.start_time and appointment_in.end_time:
+        patient_obj = db.query(Patient).filter(Patient.id == appointment_obj.patient_id).first()
+        doctor_obj = db.query(Doctor).filter(Doctor.id == appointment_obj.doctor_id).first()
+
+        if patient_obj and doctor_obj:
+            background_tasks.add_task(
+                send_appointment_reschedule_email,
+                email_to=patient_obj.email,
+                patient_name=f"{patient_obj.first_name} {patient_obj.last_name}",
+                doctor_name=f"{doctor_obj.first_name} {doctor_obj.last_name}",
+                old_appointment_date=old_start_time.date(),
+                old_start_time=old_start_time.time(),
+                old_end_time=old_end_time.time(),
+                new_appointment_date=appointment_in.start_time.date(),
+                new_start_time=appointment_in.start_time.time(),
+                new_end_time=appointment_in.end_time.time(),
+            )
+
     return appointment_obj
 
 @router.delete("/{id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_appointment(*, db : Session = Depends(get_db),id: int) -> None:
+def delete_appointment(*, db : Session = Depends(get_db),id: int, background_tasks: BackgroundTasks) -> None:
     appointment_obj = appointment.get(db, id=id)
 
     if not appointment_obj:
@@ -180,6 +221,15 @@ def delete_appointment(*, db : Session = Depends(get_db),id: int) -> None:
 
     try:
         appointment.remove(db, id=id)
+        background_tasks.add_task(
+            send_cancellation_email,
+            email_to=appointment_obj.patient.email,
+            patient_name=f"{appointment_obj.patient.first_name} {appointment_obj.patient.last_name}",
+            doctor_name=f"{appointment_obj.doctor.first_name} {appointment_obj.doctor.last_name}",
+            appointment_date=appointment_obj.start_time.date(),
+            start_time=appointment_obj.start_time.time(),
+            end_time=appointment_obj.end_time.time(),
+        )
     except IntegrityError:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -191,7 +241,8 @@ def delete_appointment(*, db : Session = Depends(get_db),id: int) -> None:
 @router.put("/{id}/status", response_model=Appointment, status_code=status.HTTP_200_OK)
 def update_appointment_status(
     *, db: Session = Depends(get_db),
-    id: int, status_in: AppointmentStatus
+    id: int, status_in: AppointmentStatus,
+    background_tasks: BackgroundTasks
 ) -> Any:
     appointment_obj = appointment.get(db, id = id)
 
@@ -208,6 +259,21 @@ def update_appointment_status(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Failed to update appointment status due to integrity constraints."
         )
+
+    if status_in == AppointmentStatus.CANCELLED:
+        patient_obj = db.query(Patient).filter(Patient.id == appointment_obj.patient_id).first()
+        doctor_obj = db.query(Doctor).filter(Doctor.id == appointment_obj.doctor_id).first()
+        if patient_obj and doctor_obj:
+            background_tasks.add_task(
+                send_cancellation_email,
+                email_to=patient_obj.email,
+                patient_name=f"{patient_obj.first_name} {patient_obj.last_name}",
+                doctor_name=f"{doctor_obj.first_name} {doctor_obj.last_name}",
+                appointment_date=appointment_obj.start_time.date(),
+                start_time=appointment_obj.start_time.time(),
+                end_time=appointment_obj.end_time.time(),
+            )
+
     return appointment_obj
 
 @router.get("/doctor/{doctor_id}/available-slots", response_model=List[dict], status_code=status.HTTP_200_OK)

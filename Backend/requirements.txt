@@ -11,4 +11,5 @@ pydantic-settings
 email-validator
 python-dotenv
 pydantic
+fastapi-mail
 redis

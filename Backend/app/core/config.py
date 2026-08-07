@@ -30,4 +30,12 @@ class Settings(BaseSettings):
 
     REDIS_URL: str = os.getenv("REDIS_URL", "redis://localhost:6379/0")
 
+    # Email Settings
+    MAIL_USERNAME: str                                                                          
+    MAIL_PASSWORD: str                                                                                       
+    MAIL_FROM: str                                                                                           
+    MAIL_PORT: int = 587                                                                                     
+    MAIL_SERVER: str                                                                                         
+    MAIL_FROM_NAME: str = "Hospital Management System"
+
 settings = Settings()
