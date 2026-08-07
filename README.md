@@ -9,7 +9,10 @@ A RESTful **Healthcare Appointment System API** built with **FastAPI**, **Postgr
 - **Patient Management** — Create, read, update, delete, and search patient records.
 - **Doctor Management** — CRUD for doctors, filter by specialization, and manage weekly availability slots.
 - **Appointment Scheduling** — Book appointments with automatic doctor-availability and time-conflict checks, status tracking (`Scheduled`, `Confirmed`, `Cancelled`, `Completed`, `No Show`), and available-slot lookup.
+- **Email Notifications** — Automated emails for appointment scheduling, rescheduling, and cancellation using `fastapi-mail`.
 - **Medical Records** — Store diagnosis, treatment, and prescription notes linked to patients and appointments.
+- **Redis Caching** — High-performance caching of frequently accessed data to reduce database load.
+- **Rate Limiting** — API rate limiting to prevent abuse and ensure service availability.
 - **Auto-generated API docs** — Interactive Swagger UI and ReDoc via FastAPI.
 - **Health check endpoint** — Verify API and database connectivity.
 
@@ -20,9 +23,11 @@ A RESTful **Healthcare Appointment System API** built with **FastAPI**, **Postgr
 | Framework      | [FastAPI](https://fastapi.tiangolo.com/)     |
 | Language       | Python 3.11+                                 |
 | Database       | PostgreSQL                                   |
+| Cache          | Redis                                        |
 | ORM            | SQLAlchemy                                   |
 | Validation     | Pydantic / pydantic-settings                 |
 | Auth           | JWT (`python-jose`) + `passlib[bcrypt]`      |
+| Email          | `fastapi-mail`                               |
 | Migrations     | Alembic                                      |
 | Server         | Uvicorn                                      |
 
@@ -40,7 +45,10 @@ Hospital Management/
     │   │       ├── doctor.py        # Doctor CRUD + availability
     │   │       └── appointment.py   # Appointment CRUD + slots
     │   ├── core/
+    │   │   ├── cache.py             # Redis caching configuration
     │   │   ├── config.py            # App settings (env-based)
+    │   │   ├── email.py             # Email notification service
+    │   │   ├── rate_limiter.py      # API rate limiting logic
     │   │   └── security.py          # Password hashing, JWT creation
     │   ├── crud/                    # Database access layer
     │   │   ├── crud_base.py         # Generic CRUD base class
@@ -73,6 +81,7 @@ Hospital Management/
 
 - Python 3.11+
 - PostgreSQL (running instance + an empty database)
+- Redis (running instance for caching and rate limiting)
 
 ### 1. Clone the repository
 
@@ -106,6 +115,15 @@ POSTGRES_PASSWORD=your_postgres_password
 POSTGRES_DB=hospital_management
 
 SECRET_KEY=your_super_secret_key
+
+REDIS_URL=redis://localhost:6379/0
+
+MAIL_USERNAME=your_email@gmail.com
+MAIL_PASSWORD=your_app_password
+MAIL_FROM=your_email@gmail.com
+MAIL_PORT=587
+MAIL_SERVER=smtp.gmail.com
+MAIL_FROM_NAME=Hospital Management System
 ```
 
 > `SECRET_KEY` is used to sign JWT access tokens — generate a strong random value for production (e.g. `openssl rand -hex 32`).
